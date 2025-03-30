@@ -34,12 +34,17 @@ class LuaGenerator:
             if step['quest_id']:
                 line += f" |QID|{step['quest_id']}|"
             
-            # Agregar nota si se proporciona
-            if step['note']:
-                line += f" |N|{step['note']}"
+            # Manejar notas y coordenadas
+            has_note = step['note'] and step['note'].strip()
+            has_coords = step['coords'] and step['coords'].strip()
+            
+            if has_note or has_coords:
+                # Si hay nota o coordenadas, crear una etiqueta de nota
+                note_text = step['note'] if has_note else "--"
+                line += f" |N|{note_text}"
                 
-                # Agregar coordenadas si se proporcionan
-                if step['coords']:
+                # Añadir coordenadas dentro de la nota si existen
+                if has_coords:
                     line += f" ({step['coords']})"
                 
                 line += "|"
