@@ -1,0 +1,19 @@
+{
+    "A": "Accept Quest - Accept a new quest from an NPC",
+    "C": "Complete Quest - Fulfill quest objectives (kill mobs, collect items, etc.)",
+    "T": "Turn in Quest - Return to quest giver to complete quest",
+    "K": "Kill Mob - Kill a specific monster or NPC",
+    "R": "Run to Location - Travel to a specific location",
+    "H": "Use Hearthstone - Use hearthstone to return to your inn",
+    "h": "Set Hearthstone - Set your hearthstone at an innkeeper",
+    "G": "Grind - Kill mobs to gain XP until a specific level",
+    "F": "Fly to Location - Use a flight path to travel",
+    "f": "Get Flight Point - Discover a new flight master",
+    "N": "Note - General information or instruction",
+    "B": "Buy Item - Purchase an item from a vendor",
+    "b": "Take Boat/Zeppelin - Use boat or zeppelin transport",
+    "U": "Use Item - Use a specific item in your inventory",
+    "P": "Pet Skill - Learn or use a hunter pet skill",
+    "D": "Die and Respawn - Intentionally die to save time",
+    "MAP": "Look at Map - Check the map for a location"
+  }

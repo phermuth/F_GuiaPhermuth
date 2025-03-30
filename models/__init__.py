@@ -1,0 +1,1 @@
+# Este archivo indica que la carpeta 'models' es un paquete de Python
