@@ -1,174 +1,4 @@
-# Quest history management methods
-    def view_quest_history(self):
-        """Show the quest history in a new window"""
-        if not self.quest_history:
-            messagebox.showinfo("Quest History", "No quests in history yet.")
-            return
-            
-        history_window = tk.Toplevel(self.root)
-        history_window.title("Quest History")
-        history_window.geometry("700x500")
-        
-        # Create treeview for quest history
-        columns = ("id", "name", "actions")
-        tree = ttk.Treeview(history_window, columns=columns, show="headings")
-        
-        # Define column headings
-        tree.heading("id", text="Quest ID")
-        tree.heading("name", text="Quest Name")
-        tree.heading("actions", text="Actions Used")
-        
-        # Set column widths
-        tree.column("id", width=80, anchor="center")
-        tree.column("name", width=400)
-        tree.column("actions", width=150, anchor="center")
-        
-        # Add scrollbar
-        scrollbar = ttk.Scrollbar(history_window, orient="vertical", command=tree.yview)
-        tree.configure(yscrollcommand=scrollbar.set)
-        
-        # Pack tree and scrollbar
-        tree.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-        
-        # Populate with data
-        for quest_id, data in self.quest_history.items():
-            actions_str = ", ".join(data['actions_used'])
-            tree.insert("", "end", values=(quest_id, data['name'], actions_str))
-            
-        # Add button to use selected quest
-        button_frame = ttk.Frame(history_window)
-        button_frame.pack(fill="x", padx=10, pady=10)
-        
-        ttk.Button(button_frame, text="Use Selected Quest", 
-                  command=lambda: self.use_selected_quest(tree)).pack(side="left", padx=5)
-        
-        ttk.Button(button_frame, text="Close", 
-                  command=history_window.destroy).pack(side="right", padx=5)
-    
-    def use_selected_quest(self, tree):
-        """Use the selected quest from the history view"""
-        selected_items = tree.selection()
-        if not selected_items:
-            return
-            
-        # Get the selected item values
-        item = selected_items[0]
-        values = tree.item(item, "values")
-        
-        # Set the quest ID and name in the form
-        self.quest_id_var.set(values[0])
-        self.quest_name_var.set(values[1])
-        
-        # Trigger the quest ID changed event to suggest the next action
-        self.quest_id_changed()
-        
-        # Close the parent window
-        tree.master.destroy()
-    
-    def export_quest_db(self):
-        """Export the quest database to a JSON file"""
-        if not self.quest_history:
-            messagebox.showinfo("Export", "No quests in history to export.")
-            return
-            
-        filename = filedialog.asksaveasfilename(
-            defaultextension=".json",
-            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
-            initialfile="guia_phermuth_quest_db.json"
-        )
-        
-        if filename:
-            with open(filename, 'w', encoding='utf-8') as f:
-                json.dump(self.quest_history, f, indent=2)
-            messagebox.showinfo("Success", f"Quest database exported to {filename}")
-    
-    def import_quest_db(self):
-        """Import a quest database from a JSON file"""
-        filename = filedialog.askopenfilename(
-            filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
-        )
-        
-        if not filename:
-            return
-        
-        try:
-            with open(filename, 'r', encoding='utf-8') as f:
-                imported_db = json.load(f)
-            
-            # Merge with current database
-            self.quest_history.update(imported_db)
-            
-            messagebox.showinfo("Success", f"Quest database imported from {filename}\nImported {len(imported_db)} quests.")
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to import quest database: {str(e)}")
-    
-    # Add these methods to save and load the quest history with the guide data
-    def save_guide(self):
-        if not self.quest_steps:
-            messagebox.showerror("Error", "No quest steps to save")
-            return
-        
-        # Create a dictionary with all guide data
-        guide_data = {
-            "metadata": {
-                "zone": self.guide_zone_var.get(),
-                "level_range": self.guide_level_range_var.get(),
-                "next_zone": self.guide_next_zone_var.get(),
-                "faction": self.guide_faction_var.get()
-            },
-            "steps": self.quest_steps,
-            "quest_history": self.quest_history
-        }
-        
-        # Ask for filename
-        if self.guide_zone_var.get() and self.guide_level_range_var.get():
-            default_filename = self.guide_level_range_var.get().replace("-", "_") + "_" + self.guide_zone_var.get().replace(" ", "_") + ".json"
-        else:
-            default_filename = "guia_phermuth_data.json"
-            
-        filename = filedialog.asksaveasfilename(
-            defaultextension=".json",
-            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
-            initialfile=default_filename
-        )
-        
-        if filename:
-            with open(filename, 'w', encoding='utf-8') as f:
-                json.dump(guide_data, f, indent=2)
-            messagebox.showinfo("Success", f"Guide data saved to {filename}")
-    
-    def load_guide(self):
-        filename = filedialog.askopenfilename(
-            filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
-        )
-        
-        if not filename:
-            return
-        
-        try:
-            with open(filename, 'r', encoding='utf-8') as f:
-                guide_data = json.load(f)
-            
-            # Load metadata
-            metadata = guide_data.get("metadata", {})
-            self.guide_zone_var.set(metadata.get("zone", ""))
-            self.guide_level_range_var.set(metadata.get("level_range", ""))
-            self.guide_next_zone_var.set(metadata.get("next_zone", ""))
-            self.guide_faction_var.set(metadata.get("faction", "Horde"))
-            
-            # Load steps
-            self.quest_steps = guide_data.get("steps", [])
-            
-            # Load quest history if available
-            if "quest_history" in guide_data:
-                self.quest_history = guide_data["quest_history"]
-            
-            self.refresh_treeview()
-            
-            messagebox.showinfo("Success", f"Guide loaded from {filename}")
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to load guide: {str(e)}")import tkinter as tk
+import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import re
 import os
@@ -320,12 +150,10 @@ class GuiaPhermuthCreator:
         
         # X coordinate
         ttk.Label(coord_frame, text="X:").pack(side="left")
-        self.coord_x_var = tk.StringVar()
         ttk.Entry(coord_frame, textvariable=self.coord_x_var, width=7).pack(side="left", padx=2)
         
         # Y coordinate
         ttk.Label(coord_frame, text="Y:").pack(side="left", padx=2)
-        self.coord_y_var = tk.StringVar()
         ttk.Entry(coord_frame, textvariable=self.coord_y_var, width=7).pack(side="left")
         
         ttk.Label(row3, text="Class:").pack(side="left", padx=5)
@@ -431,6 +259,36 @@ class GuiaPhermuthCreator:
             self.action_desc_label.config(text=self.action_types[action])
         else:
             self.action_desc_label.config(text="")
+    
+    def quest_id_changed(self, event=None):
+        """Called when the quest ID is changed to look up quest history"""
+        quest_id = self.quest_id_var.get().strip()
+        if quest_id and quest_id in self.quest_history:
+            # Auto-fill the quest name if it's in history
+            self.quest_name_var.set(self.quest_history[quest_id]['name'])
+            # Suggest next action
+            self.suggest_next_action_for_quest(quest_id)
+
+    def quest_name_changed(self, event=None):
+        """Called when the quest name is changed"""
+        # Nothing needed here for now, but we can add functionality later
+        pass
+
+    def suggest_next_action_for_quest(self, quest_id):
+        """Suggest the next action for a quest based on its history"""
+        if not quest_id or quest_id not in self.quest_history:
+            return
+        
+        actions_used = self.quest_history[quest_id]['actions_used']
+        
+        # Typical quest flow: A -> C -> T
+        if 'A' in actions_used and 'C' not in actions_used:
+            self.action_var.set('C')
+        elif 'C' in actions_used and 'T' not in actions_used:
+            self.action_var.set('T')
+        
+        # Update action description
+        self.update_action_description()
     
     def load_class_list(self):
         classes = [
@@ -647,7 +505,7 @@ class GuiaPhermuthCreator:
             # Generate guide name
             guide_name = f"{self.guide_zone_var.get()} ({self.guide_level_range_var.get()})"
             if self.guide_next_zone_var.get() and '-' in self.guide_level_range_var.get():
-                next_zone = f"{self.guide_next_zone_var.get()} ({self.guide_level_range_var.split('-')[1]}-XX)"
+                next_zone = f"{self.guide_next_zone_var.get()} ({self.guide_level_range_var.get().split('-')[1]}-XX)"
             else:
                 next_zone = "nil"
         else:
@@ -777,7 +635,8 @@ class GuiaPhermuthCreator:
                 "next_zone": self.guide_next_zone_var.get(),
                 "faction": self.guide_faction_var.get()
             },
-            "steps": self.quest_steps
+            "steps": self.quest_steps,
+            "quest_history": self.quest_history
         }
         
         # Ask for filename
@@ -785,6 +644,7 @@ class GuiaPhermuthCreator:
             default_filename = self.guide_level_range_var.get().replace("-", "_") + "_" + self.guide_zone_var.get().replace(" ", "_") + ".json"
         else:
             default_filename = "guia_phermuth_data.json"
+            
         filename = filedialog.asksaveasfilename(
             defaultextension=".json",
             filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
@@ -795,7 +655,7 @@ class GuiaPhermuthCreator:
             with open(filename, 'w', encoding='utf-8') as f:
                 json.dump(guide_data, f, indent=2)
             messagebox.showinfo("Success", f"Guide data saved to {filename}")
-    
+
     def load_guide(self):
         filename = filedialog.askopenfilename(
             filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
@@ -817,12 +677,121 @@ class GuiaPhermuthCreator:
             
             # Load steps
             self.quest_steps = guide_data.get("steps", [])
+            
+            # Load quest history if available
+            if "quest_history" in guide_data:
+                self.quest_history = guide_data["quest_history"]
+            
             self.refresh_treeview()
             
             messagebox.showinfo("Success", f"Guide loaded from {filename}")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load guide: {str(e)}")
-    
+
+    def view_quest_history(self):
+        """Show the quest history in a new window"""
+        if not self.quest_history:
+            messagebox.showinfo("Quest History", "No quests in history yet.")
+            return
+            
+        history_window = tk.Toplevel(self.root)
+        history_window.title("Quest History")
+        history_window.geometry("700x500")
+        
+        # Create treeview for quest history
+        columns = ("id", "name", "actions")
+        tree = ttk.Treeview(history_window, columns=columns, show="headings")
+        
+        # Define column headings
+        tree.heading("id", text="Quest ID")
+        tree.heading("name", text="Quest Name")
+        tree.heading("actions", text="Actions Used")
+        
+        # Set column widths
+        tree.column("id", width=80, anchor="center")
+        tree.column("name", width=400)
+        tree.column("actions", width=150, anchor="center")
+        
+        # Add scrollbar
+        scrollbar = ttk.Scrollbar(history_window, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+        
+        # Pack tree and scrollbar
+        tree.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Populate with data
+        for quest_id, data in self.quest_history.items():
+            actions_str = ", ".join(data['actions_used'])
+            tree.insert("", "end", values=(quest_id, data['name'], actions_str))
+            
+        # Add button to use selected quest
+        button_frame = ttk.Frame(history_window)
+        button_frame.pack(fill="x", padx=10, pady=10)
+        
+        ttk.Button(button_frame, text="Use Selected Quest", 
+                command=lambda: self.use_selected_quest(tree)).pack(side="left", padx=5)
+        
+        ttk.Button(button_frame, text="Close", 
+                command=history_window.destroy).pack(side="right", padx=5)
+
+    def use_selected_quest(self, tree):
+        """Use the selected quest from the history view"""
+        selected_items = tree.selection()
+        if not selected_items:
+            return
+            
+        # Get the selected item values
+        item = selected_items[0]
+        values = tree.item(item, "values")
+        
+        # Set the quest ID and name in the form
+        self.quest_id_var.set(values[0])
+        self.quest_name_var.set(values[1])
+        
+        # Trigger the quest ID changed event to suggest the next action
+        self.quest_id_changed()
+        
+        # Close the parent window
+        tree.master.destroy()
+
+    def export_quest_db(self):
+        """Export the quest database to a JSON file"""
+        if not self.quest_history:
+            messagebox.showinfo("Export", "No quests in history to export.")
+            return
+            
+        filename = filedialog.asksaveasfilename(
+            defaultextension=".json",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+            initialfile="guia_phermuth_quest_db.json"
+        )
+        
+        if filename:
+            with open(filename, 'w', encoding='utf-8') as f:
+                json.dump(self.quest_history, f, indent=2)
+            messagebox.showinfo("Success", f"Quest database exported to {filename}")
+
+    def import_quest_db(self):
+        """Import a quest database from a JSON file"""
+        filename = filedialog.askopenfilename(
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+        )
+        
+        if not filename:
+            return
+        
+        try:
+            with open(filename, 'r', encoding='utf-8') as f:
+                imported_db = json.load(f)
+            
+            # Merge with current database
+            self.quest_history.update(imported_db)
+            
+            messagebox.showinfo("Success", f"Quest database imported from {filename}\nImported {len(imported_db)} quests.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to import quest database: {str(e)}")
+
     def show_action_types(self):
         action_info = "Action Types:\n\n"
         for code, desc in self.action_types.items():
@@ -830,7 +799,7 @@ class GuiaPhermuthCreator:
         
         messagebox.showinfo("Action Types", action_info)
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = GuiaPhermuthCreator(root)
-    root.mainloop()
+    if __name__ == "__main__":
+        root = tk.Tk()
+        app = GuiaPhermuthCreator(root)
+        root.mainloop()
