@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import re
 import os
+from datetime import datetime
 import json
 
 class GuiaPhermuthCreator:
@@ -50,6 +51,88 @@ class GuiaPhermuthCreator:
         self.load_zone_list()
         self.load_race_list()
         
+    def autosave(self):
+        """Guarda automáticamente el estado actual en un archivo temporal"""
+        # Crear directorio de autosalvado si no existe
+        autosave_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "autosave")
+        if not os.path.exists(autosave_dir):
+            os.makedirs(autosave_dir)
+        
+        # Crear nombre de archivo basado en la zona y nivel, o usar timestamp
+        if self.guide_zone_var.get() and self.guide_level_range_var.get():
+            base_name = f"{self.guide_level_range_var.get().replace('-', '_')}_{self.guide_zone_var.get().replace(' ', '_')}"
+        else:
+            base_name = f"autosave_{datetime.now().strftime('%Y%m%d')}"
+        
+        filename = os.path.join(autosave_dir, f"{base_name}.autosave.json")
+        
+        # Crear un diccionario con todos los datos de la guía
+        guide_data = {
+            "metadata": {
+                "zone": self.guide_zone_var.get(),
+                "level_range": self.guide_level_range_var.get(),
+                "next_zone": self.guide_next_zone_var.get(),
+                "faction": self.guide_faction_var.get()
+            },
+            "steps": self.quest_steps,
+            "quest_history": self.quest_history,
+            "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
+        # Guardar en el archivo
+        try:
+            with open(filename, 'w', encoding='utf-8') as f:
+                json.dump(guide_data, f, indent=2)
+            # Opcional: Mostrar mensaje en la barra de estado (si tienes una)
+            print(f"Autosalvado completado: {filename}")
+        except Exception as e:
+            print(f"Error en autosalvado: {str(e)}")
+
+    def load_last_autosave(self):
+        """Carga el último archivo de autosalvado disponible"""
+        autosave_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "autosave")
+        if not os.path.exists(autosave_dir):
+            messagebox.showinfo("Autosalvado", "No hay archivos de autosalvado disponibles.")
+            return
+        
+        # Buscar el archivo de autosalvado más reciente
+        autosave_files = [f for f in os.listdir(autosave_dir) if f.endswith('.autosave.json')]
+        if not autosave_files:
+            messagebox.showinfo("Autosalvado", "No hay archivos de autosalvado disponibles.")
+            return
+        
+        # Ordenar por fecha de modificación (más reciente primero)
+        latest_file = max(
+            [os.path.join(autosave_dir, f) for f in autosave_files],
+            key=os.path.getmtime
+        )
+        
+        # Cargar el archivo
+        try:
+            with open(latest_file, 'r', encoding='utf-8') as f:
+                guide_data = json.load(f)
+            
+            # Cargar metadatos
+            metadata = guide_data.get("metadata", {})
+            self.guide_zone_var.set(metadata.get("zone", ""))
+            self.guide_level_range_var.set(metadata.get("level_range", ""))
+            self.guide_next_zone_var.set(metadata.get("next_zone", ""))
+            self.guide_faction_var.set(metadata.get("faction", "Horde"))
+            
+            # Cargar pasos
+            self.quest_steps = guide_data.get("steps", [])
+            
+            # Cargar historial de misiones
+            if "quest_history" in guide_data:
+                self.quest_history = guide_data["quest_history"]
+            
+            self.refresh_treeview()
+            
+            timestamp = guide_data.get("timestamp", "desconocido")
+            messagebox.showinfo("Autosalvado", f"Guía cargada desde autosalvado\nÚltima modificación: {timestamp}")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo cargar el autosalvado: {str(e)}")
+
     def create_menu(self):
         menubar = tk.Menu(self.root)
         
@@ -60,6 +143,10 @@ class GuiaPhermuthCreator:
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.root.quit)
         
+        file_menu.add_separator()
+        file_menu.add_command(label="Cargar último autosalvado", command=self.load_last_autosave)
+        file_menu.add_command(label="Forzar autosalvado ahora", command=self.autosave)
+
         help_menu = tk.Menu(menubar, tearoff=0)
         help_menu.add_command(label="About", command=lambda: messagebox.showinfo("About", "GuiaPhermuth Quest Guide Creator\nA tool to create quest guides for the GuiaPhermuth addon."))
         help_menu.add_command(label="Action Types", command=self.show_action_types)
@@ -320,6 +407,7 @@ class GuiaPhermuthCreator:
         # Validate required fields
         if not self.action_var.get() or not self.quest_name_var.get():
             messagebox.showerror("Error", "Action and Quest Name are required fields")
+            self.autosave()
             return
         
         # Combine X and Y coordinates if provided
