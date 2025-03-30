@@ -799,7 +799,10 @@ class GuiaPhermuthCreator:
         
         messagebox.showinfo("Action Types", action_info)
 
-    if __name__ == "__main__":
-        root = tk.Tk()
-        app = GuiaPhermuthCreator(root)
-        root.mainloop()
+# Fin de la clase GuiaPhermuthCreator
+
+# Este bloque debe estar FUERA de la clase
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = GuiaPhermuthCreator(root)
+    root.mainloop()
