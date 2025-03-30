@@ -5,7 +5,7 @@ class QuestHistory:
         """Inicializa un nuevo historial de misiones vacío."""
         self.quest_history = {}
     
-    def add_quest(self, quest_id, quest_name, action):
+    def add_quest(self, quest_id, quest_name, action, coords_x=None, coords_y=None):
         """
         Agrega o actualiza una misión en el historial.
         
@@ -13,14 +13,18 @@ class QuestHistory:
             quest_id (str): ID de la misión
             quest_name (str): Nombre de la misión
             action (str): Acción realizada (A, C, T, etc.)
+            coords_x (str, optional): Coordenada X. Defaults to None.
+            coords_y (str, optional): Coordenada Y. Defaults to None.
         """
         if not quest_id:
             return
             
         if quest_id not in self.quest_history:
+            # Crear nuevo registro de misión
             self.quest_history[quest_id] = {
                 'name': quest_name,
-                'actions_used': [action]
+                'actions_used': [action],
+                'coords': {}
             }
         else:
             # Actualizar nombre de la misión
@@ -29,6 +33,16 @@ class QuestHistory:
             # Agregar acción si no está ya
             if action not in self.quest_history[quest_id]['actions_used']:
                 self.quest_history[quest_id]['actions_used'].append(action)
+        
+        # Guardar coordenadas para esta acción si se proporcionan
+        if coords_x and coords_y:
+            if 'coords' not in self.quest_history[quest_id]:
+                self.quest_history[quest_id]['coords'] = {}
+            
+            self.quest_history[quest_id]['coords'][action] = {
+                'x': coords_x,
+                'y': coords_y
+            }
     
     def get_quest_name(self, quest_id):
         """
@@ -43,6 +57,38 @@ class QuestHistory:
         if quest_id in self.quest_history:
             return self.quest_history[quest_id]['name']
         return ""
+    
+    def get_quest_coords(self, quest_id, action=None):
+        """
+        Obtiene las coordenadas para una misión específica y acción.
+        Si no se especifica acción, intenta obtener coordenadas relevantes.
+        Por ejemplo, para 'T' buscará coordenadas de 'A' si no existen para 'T'.
+        
+        Args:
+            quest_id (str): ID de la misión
+            action (str, optional): Acción específica. Defaults to None.
+            
+        Returns:
+            tuple: Par (coord_x, coord_y) o (None, None) si no hay datos
+        """
+        if not quest_id or quest_id not in self.quest_history:
+            return None, None
+        
+        if 'coords' not in self.quest_history[quest_id]:
+            return None, None
+        
+        coords_data = self.quest_history[quest_id]['coords']
+        
+        # Si se especificó acción, intentar obtener coordenadas para esa acción
+        if action and action in coords_data:
+            return coords_data[action]['x'], coords_data[action]['y']
+        
+        # Para 'T', usar coordenadas de 'A' si existen
+        if action == 'T' and 'A' in coords_data:
+            return coords_data['A']['x'], coords_data['A']['y']
+        
+        # Si no se encontraron coordenadas específicas, retornar None
+        return None, None
     
     def suggest_next_action(self, quest_id):
         """

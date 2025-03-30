@@ -48,6 +48,10 @@ class GuiaPhermuthCreator:
             on_move_down=lambda: self.move_step(1)
         )
         self.form_frame.set_quest_changed_callback(self.quest_id_changed)
+        
+        # Establecer callback para obtener coordenadas
+        self.form_frame.set_coords_callback(self.get_quest_coords)
+        
         self.form_frame.pack(fill="x", padx=10, pady=10)
         
         self.quest_list_frame = QuestListFrame(
@@ -125,7 +129,9 @@ class GuiaPhermuthCreator:
             self.quest_history.add_quest(
                 quest_id, 
                 step_data['quest_name'],
-                step_data['action']
+                step_data['action'],
+                step_data.get('coord_x'),  # Guardar coordenadas
+                step_data.get('coord_y')
             )
         
         # Actualizar vista
@@ -142,6 +148,19 @@ class GuiaPhermuthCreator:
         
         # Autoguardar
         self.autosave()
+    
+    def get_quest_coords(self, quest_id, action):
+        """
+        Obtiene coordenadas para una misión y acción específicas.
+        
+        Args:
+            quest_id (str): ID de la misión
+            action (str): Tipo de acción
+            
+        Returns:
+            tuple: Coordenadas (x, y) o (None, None) si no existen
+        """
+        return self.quest_history.get_quest_coords(quest_id, action)
     
     def clear_form(self):
         """Limpia el formulario."""

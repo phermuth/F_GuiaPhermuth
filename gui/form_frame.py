@@ -57,6 +57,7 @@ class FormFrame:
         
         # Eventos para combo de acción
         self.action_combo.bind("<<ComboboxSelected>>", self.update_action_description)
+        self.action_combo.bind("<<ComboboxSelected>>", self.action_changed, add="+")
         
         ttk.Label(row1, text="Quest ID:").pack(side="left", padx=5)
         self.quest_id_entry = ttk.Entry(row1, textvariable=self.quest_id_var, width=8)
@@ -132,6 +133,15 @@ class FormFrame:
         """
         self.quest_changed_callback = callback
     
+    def set_coords_callback(self, callback):
+        """
+        Establece la función callback para obtener coordenadas de una misión.
+        
+        Args:
+            callback: Función a llamar para obtener coordenadas
+        """
+        self.get_coords_callback = callback
+    
     def pack(self, **kwargs):
         """
         Empaqueta el frame en su contenedor padre.
@@ -192,6 +202,25 @@ class FormFrame:
         else:
             self.action_desc_label.config(text="")
     
+    def action_changed(self, event=None):
+        """
+        Maneja el evento de cambio en la acción.
+        Si la acción cambia a "T" y hay un ID de misión, buscar coordenadas.
+        
+        Args:
+            event: Evento que desencadenó el cambio (opcional)
+        """
+        # Verificar si tenemos el callback para obtener coordenadas
+        if not hasattr(self, 'get_coords_callback'):
+            return
+        
+        action = self.action_var.get()
+        quest_id = self.quest_id_var.get().strip()
+        
+        # Si es una acción de entregar misión (T) y tenemos un ID, intentar recuperar coordenadas
+        if action == 'T' and quest_id:
+            self.try_load_quest_coords(quest_id, action)
+    
     def quest_id_changed(self, event=None):
         """
         Maneja el evento de cambio en el ID de misión.
@@ -202,6 +231,28 @@ class FormFrame:
         if hasattr(self, 'quest_changed_callback'):
             quest_id = self.quest_id_var.get().strip()
             self.quest_changed_callback(quest_id)
+            
+            # Intentar cargar coordenadas si la acción actual es 'T'
+            action = self.action_var.get()
+            if action == 'T' and quest_id:
+                self.try_load_quest_coords(quest_id, action)
+    
+    def try_load_quest_coords(self, quest_id, action):
+        """
+        Intenta cargar coordenadas para una misión y acción específicas.
+        
+        Args:
+            quest_id (str): ID de la misión
+            action (str): Tipo de acción
+        """
+        if hasattr(self, 'get_coords_callback'):
+            # Llamar al callback para obtener coordenadas
+            coord_x, coord_y = self.get_coords_callback(quest_id, action)
+            
+            # Si se encontraron coordenadas, establecerlas en el formulario
+            if coord_x and coord_y:
+                self.coord_x_var.set(coord_x)
+                self.coord_y_var.set(coord_y)
     
     def quest_name_changed(self, event=None):
         """
@@ -292,3 +343,8 @@ class FormFrame:
         if action:
             self.action_var.set(action)
             self.update_action_description()
+            
+            # Verificar si debemos cargar coordenadas para esta nueva acción
+            quest_id = self.quest_id_var.get().strip()
+            if action == 'T' and quest_id:
+                self.try_load_quest_coords(quest_id, action)
