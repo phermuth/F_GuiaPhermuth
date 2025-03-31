@@ -252,14 +252,17 @@ class FormFrame:
             quest_id (str): ID de la misión
             action (str): Tipo de acción
         """
-        if hasattr(self, 'get_coords_callback'):
-            # Llamar al callback para obtener coordenadas
-            coord_x, coord_y = self.get_coords_callback(quest_id, action)
+    # Verificar primero si el callback existe
+        if not hasattr(self, 'get_coords_callback'):
+            return  # Salir si no existe el callback
             
-            # Si se encontraron coordenadas, establecerlas en el formulario
-            if coord_x and coord_y:
-                self.coord_x_var.set(coord_x)
-                self.coord_y_var.set(coord_y)
+        # Llamar al callback para obtener coordenadas
+        coord_x, coord_y = self.get_coords_callback(quest_id, action)
+        
+        # Si se encontraron coordenadas, establecerlas en el formulario
+        if coord_x and coord_y:
+            self.coord_x_var.set(coord_x)
+            self.coord_y_var.set(coord_y)
     
     def quest_name_changed(self, event=None):
         """
