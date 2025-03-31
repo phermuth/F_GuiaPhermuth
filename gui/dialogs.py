@@ -133,28 +133,28 @@ class QuestHistoryDialog:
         # Cerrar la ventana
         self.window.destroy()
 
-    def show_action_types_dialog(parent, action_types):
-        """
-        Muestra un diálogo con información sobre los tipos de acciones.
-        
-        Args:
-            parent: Widget padre
-            action_types (dict): Diccionario de tipos de acciones
-        """
-        action_info = "Action Types:\n\n"
-        for code, desc in action_types.items():
-            action_info += f"{code} - {desc}\n"
-        
-        messagebox.showinfo("Action Types", action_info, parent=parent)
+def show_action_types_dialog(parent, action_types):
+    """
+    Muestra un diálogo con información sobre los tipos de acciones.
+    
+    Args:
+        parent: Widget padre
+        action_types (dict): Diccionario de tipos de acciones
+    """
+    action_info = "Action Types:\n\n"
+    for code, desc in action_types.items():
+        action_info += f"{code} - {desc}\n"
+    
+    messagebox.showinfo("Action Types", action_info, parent=parent)
 
-    def confirm_new_guide(parent):
-        """
-        Solicita confirmación para crear una nueva guía.
+def confirm_new_guide(parent):
+    """
+    Solicita confirmación para crear una nueva guía.
+    
+    Args:
+        parent: Widget padre
         
-        Args:
-            parent: Widget padre
-            
-        Returns:
-            bool: True si el usuario confirmó, False en caso contrario
-        """
-        return messagebox.askyesno("New Guide", "This will clear all current quest steps. Continue?", parent=parent)
+    Returns:
+        bool: True si el usuario confirmó, False en caso contrario
+    """
+    return messagebox.askyesno("New Guide", "This will clear all current quest steps. Continue?", parent=parent)
