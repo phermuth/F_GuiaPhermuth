@@ -53,6 +53,9 @@ class QuestListFrame:
         
         # Vincular evento de doble clic para editar paso
         self.tree.bind("<Double-1>", on_edit_step)
+
+        # Configurar estilos de tags
+        self.tree.tag_configure("editing", background="#FFFFCC")
     
     def pack(self, **kwargs):
         """
@@ -120,3 +123,25 @@ class QuestListFrame:
                 self.tree.selection_set(item)
                 self.tree.see(item)
                 break
+
+    def highlight_editing_row(self, index):
+        """
+        Destaca visualmente la fila que se está editando.
+        
+        Args:
+            index (int): Índice del paso que se está editando
+        """
+        # Restaurar el estilo normal para todas las filas
+        for item in self.tree.get_children():
+            self.tree.item(item, tags=())
+        
+        # Si se proporciona un índice válido, aplicar estilo de edición
+        if index is not None:
+            for item in self.tree.get_children():
+                values = self.tree.item(item, "values")
+                if values and int(values[0]) - 1 == index:  # Ajuste por índice UI vs índice real
+                    self.tree.item(item, tags=("editing",))
+                    break
+        
+        # Definir el estilo para filas en edición (color de fondo amarillo claro)
+        self.tree.tag_configure("editing", background="#FFFFCC")

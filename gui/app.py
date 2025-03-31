@@ -31,6 +31,12 @@ class GuiaPhermuthCreator:
         self.guide = Guide()
         self.quest_history = QuestHistory()
         
+        # Variable para rastrear el paso que se está editando
+        self.editing_step_index = None
+        
+        # Añadir protocolo para manejar cierre de la aplicación
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+        
         # Crear menú
         self.create_menu()
         
@@ -62,6 +68,23 @@ class GuiaPhermuthCreator:
         
         # Cargar datos predefinidos
         self.load_predefined_data()
+
+    def on_close(self):
+        """Maneja el evento de cierre de la aplicación."""
+        # Verificar si hay una edición en progreso
+        if self.editing_step_index is not None:
+            if not messagebox.askyesno("Edición en progreso",
+                                    "Hay una edición en progreso. ¿Descartar los cambios y salir?"):
+                return
+        
+        # Preguntar si desea guardar la guía antes de salir
+        if self.guide.get_all_steps():
+            if messagebox.askyesno("Guardar antes de salir",
+                                "¿Deseas guardar la guía antes de salir?"):
+                self.save_guide()
+        
+        # Cerrar la aplicación
+        self.root.destroy()
     
     def create_menu(self):
         """Crea la barra de menú de la aplicación."""
@@ -110,32 +133,57 @@ class GuiaPhermuthCreator:
     
     def add_step(self, step_data):
         """
-        Añade un paso a la guía.
+        Añade o actualiza un paso en la guía.
         
         Args:
-            step_data (dict): Datos del paso a añadir
+            step_data (dict): Datos del paso a añadir o actualizar
         """
         # Validar campos requeridos
         if not step_data['action'] or not step_data['quest_name']:
             messagebox.showerror("Error", "Action and Quest Name are required fields")
             return
         
-        # Añadir al modelo Guide
-        self.guide.add_step(step_data)
+        index_to_select = None
         
-        # Actualizar historial de misiones
+        if self.editing_step_index is not None:
+            # Estamos editando un paso existente
+            # Actualizar en el modelo Guide
+            self.guide.update_step(self.editing_step_index, step_data)
+            
+            # Guardamos el índice para seleccionarlo después
+            index_to_select = self.editing_step_index
+            
+            # Restablecer el índice de edición
+            self.editing_step_index = None
+            
+            # Cambiar la UI al modo de adición
+            self.form_frame.set_edit_mode(False)
+        else:
+            # Añadir nuevo paso al modelo Guide
+            self.guide.add_step(step_data)
+            # Seleccionaremos el último paso
+            index_to_select = len(self.guide.get_all_steps()) - 1
+        
+        # Actualizar historial de misiones (en ambos casos)
         quest_id = step_data['quest_id']
         if quest_id:
             self.quest_history.add_quest(
                 quest_id, 
                 step_data['quest_name'],
                 step_data['action'],
-                step_data.get('coord_x'),  # Guardar coordenadas
+                step_data.get('coord_x'),
                 step_data.get('coord_y')
             )
         
         # Actualizar vista
         self.quest_list_frame.refresh(self.guide.get_all_steps())
+
+        # Después de refrescar la lista, quitar el destacado de edición
+        self.quest_list_frame.highlight_editing_row(None)
+        
+        # Seleccionar el paso que acabamos de añadir/actualizar
+        if index_to_select is not None:
+            self.quest_list_frame.select_by_index(index_to_select)
         
         # Limpiar formulario
         self.clear_form()
@@ -163,11 +211,22 @@ class GuiaPhermuthCreator:
         return self.quest_history.get_quest_coords(quest_id, action)
     
     def clear_form(self):
-        """Limpia el formulario."""
+        """Limpia el formulario y cancela cualquier edición en progreso."""
         self.form_frame.clear_form()
+        
+        # Si estábamos editando, cancelar la edición
+        if self.editing_step_index is not None:
+            self.editing_step_index = None
+            self.form_frame.update_add_button_text("Add Step")
     
     def generate_lua(self):
         """Genera y muestra el código Lua."""
+        # Si hay una edición en progreso, advertir al usuario
+        if self.editing_step_index is not None:
+            if not messagebox.askyesno("Edición en progreso",
+                                    "Hay una edición en progreso. ¿Deseas continuar sin guardar los cambios?"):
+                return
+        
         # Verificar que hay pasos para generar
         if not self.guide.get_all_steps():
             messagebox.showerror("Error", "No quest steps to generate")
@@ -207,8 +266,24 @@ class GuiaPhermuthCreator:
     
     def delete_selected(self):
         """Elimina el paso seleccionado."""
+        # Si estamos editando, preguntar si quiere cancelar la edición primero
+        if self.editing_step_index is not None:
+            if not messagebox.askyesno("Edición en progreso",
+                                    "Hay una edición en progreso. ¿Descartar los cambios?"):
+                return
+            
+            # Cancelar la edición
+            self.editing_step_index = None
+            self.form_frame.set_edit_mode(False)
+            self.clear_form()
+        
         selected_index = self.quest_list_frame.get_selected_index()
         if selected_index is None:
+            return
+        
+        # Confirmar eliminación
+        if not messagebox.askyesno("Confirmar eliminación",
+                                "¿Estás seguro de que deseas eliminar este paso?"):
             return
         
         # Eliminar del modelo
@@ -222,11 +297,17 @@ class GuiaPhermuthCreator:
     
     def move_step(self, direction):
         """
-        Mueve un paso hacia arriba o hacia abajo.
+        Mueve un paso hacia arriba o hacia abajo en la guía.
         
         Args:
             direction (int): Dirección de movimiento (-1 para arriba, 1 para abajo)
         """
+        # Si estamos editando y se intenta mover otro paso, advertir al usuario
+        if self.editing_step_index is not None:
+            messagebox.showwarning("Edición en progreso",
+                                "Por favor, termina la edición actual antes de mover pasos.")
+            return
+        
         selected_index = self.quest_list_frame.get_selected_index()
         if selected_index is None:
             return
@@ -252,6 +333,13 @@ class GuiaPhermuthCreator:
         Args:
             event: Evento que desencadenó la edición
         """
+        # Verificar si ya estamos editando algo
+        if self.editing_step_index is not None:
+            # Preguntar al usuario si quiere descartar la edición actual
+            if not messagebox.askyesno("Edición en progreso", 
+                                    "Ya estás editando un paso. ¿Descartar los cambios actuales?"):
+                return
+        
         selected_index = self.quest_list_frame.get_selected_index()
         if selected_index is None:
             return
@@ -264,11 +352,27 @@ class GuiaPhermuthCreator:
         # Establecer datos en el formulario
         self.form_frame.set_form_data(step_data)
         
-        # Eliminar el paso (se añadirá nuevamente al presionar "Add Step")
-        self.guide.remove_step(selected_index)
+        # Guardar el índice del paso que estamos editando
+        self.editing_step_index = selected_index
         
-        # Actualizar vista
-        self.quest_list_frame.refresh(self.guide.get_all_steps())
+        # Cambiar la UI al modo de edición
+        self.form_frame.set_edit_mode(True)
+        
+        # Seleccionar y destacar visualmente el paso que se está editando
+        self.quest_list_frame.select_by_index(selected_index)
+        self.quest_list_frame.highlight_editing_row(selected_index)
+
+    def clear_form(self):
+        """Limpia el formulario y cancela cualquier edición en progreso."""
+        self.form_frame.clear_form()
+        
+        # Si estábamos editando, cancelar la edición
+        if self.editing_step_index is not None:
+            self.editing_step_index = None
+            self.form_frame.set_edit_mode(False)
+
+        # Quitar el destacado de edición
+        self.quest_list_frame.highlight_editing_row(None)
     
     def quest_id_changed(self, quest_id):
         """
@@ -291,6 +395,16 @@ class GuiaPhermuthCreator:
     
     def new_guide(self):
         """Crea una nueva guía."""
+        # Si hay una edición en progreso, preguntar si quiere descartarla
+        if self.editing_step_index is not None:
+            if not messagebox.askyesno("Edición en progreso",
+                                    "Hay una edición en progreso. ¿Descartar los cambios?"):
+                return
+            
+            # Cancelar la edición
+            self.editing_step_index = None
+            self.form_frame.set_edit_mode(False)
+        
         if not confirm_new_guide(self.root):
             return
         
@@ -323,6 +437,16 @@ class GuiaPhermuthCreator:
     
     def load_guide(self):
         """Carga una guía desde un archivo."""
+        # Si hay una edición en progreso, preguntar si quiere descartarla
+        if self.editing_step_index is not None:
+            if not messagebox.askyesno("Edición en progreso",
+                                    "Hay una edición en progreso. ¿Descartar los cambios?"):
+                return
+            
+            # Cancelar la edición
+            self.editing_step_index = None
+            self.form_frame.set_edit_mode(False)
+        
         guide_data = FileHandler.load_guide()
         if not guide_data:
             return
@@ -365,6 +489,16 @@ class GuiaPhermuthCreator:
     
     def load_last_autosave(self):
         """Carga el último autoguardado disponible."""
+        # Si hay una edición en progreso, preguntar si quiere descartarla
+        if self.editing_step_index is not None:
+            if not messagebox.askyesno("Edición en progreso",
+                                    "Hay una edición en progreso. ¿Descartar los cambios?"):
+                return
+            
+            # Cancelar la edición
+            self.editing_step_index = None
+            self.form_frame.set_edit_mode(False)
+        
         guide_data = FileHandler.load_last_autosave()
         if not guide_data:
             return

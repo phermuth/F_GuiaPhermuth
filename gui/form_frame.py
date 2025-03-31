@@ -108,15 +108,22 @@ class FormFrame:
         ttk.Entry(row3, textvariable=self.obj_id_var, width=8).pack(side="left", padx=5)
         
         # Botones
-        button_frame = ttk.Frame(self.frame)
-        button_frame.pack(fill="x", padx=5, pady=10)
+        self.button_frame = ttk.Frame(self.frame)
+        self.button_frame.pack(fill="x", padx=5, pady=10)
         
-        ttk.Button(button_frame, text="Add Step", command=self.add_step).pack(side="left", padx=5)
-        ttk.Button(button_frame, text="Clear Form", command=self.clear_form).pack(side="left", padx=5)
-        ttk.Button(button_frame, text="Generate Lua", command=on_generate_lua).pack(side="right", padx=5)
-        ttk.Button(button_frame, text="Delete Selected", command=on_delete_selected).pack(side="right", padx=5)
-        ttk.Button(button_frame, text="Move Up", command=on_move_up).pack(side="right", padx=5)
-        ttk.Button(button_frame, text="Move Down", command=on_move_down).pack(side="right", padx=5)
+        self.add_button = ttk.Button(self.button_frame, text="Add Step", command=self.add_step)
+        self.add_button.pack(side="left", padx=5)
+        
+        ttk.Button(self.button_frame, text="Clear Form", command=on_clear_form).pack(side="left", padx=5)
+        
+        # Botón para cancelar la edición (inicialmente oculto)
+        self.cancel_edit_button = ttk.Button(self.button_frame, text="Cancel Edit", command=on_clear_form)
+        # No empaquetamos todavía - se mostrará solo durante la edición
+        
+        ttk.Button(self.button_frame, text="Generate Lua", command=on_generate_lua).pack(side="right", padx=5)
+        ttk.Button(self.button_frame, text="Delete Selected", command=on_delete_selected).pack(side="right", padx=5)
+        ttk.Button(self.button_frame, text="Move Up", command=on_move_up).pack(side="right", padx=5)
+        ttk.Button(self.button_frame, text="Move Down", command=on_move_down).pack(side="right", padx=5)
         
         # Configurar eventos
         self.quest_id_entry.bind("<FocusOut>", self.quest_id_changed)
@@ -348,3 +355,21 @@ class FormFrame:
             quest_id = self.quest_id_var.get().strip()
             if action == 'T' and quest_id:
                 self.try_load_quest_coords(quest_id, action)
+
+    def set_edit_mode(self, is_editing):
+        """
+        Cambia la interfaz entre modo de edición y modo de adición.
+        
+        Args:
+            is_editing (bool): True si estamos en modo de edición, False en caso contrario
+        """
+        if is_editing:
+            # Cambiar a modo de edición
+            self.add_button.config(text="Update Step")
+            # Mostrar botón de cancelar
+            self.cancel_edit_button.pack(side="left", padx=5, after=self.add_button)
+        else:
+            # Cambiar a modo de adición
+            self.add_button.config(text="Add Step")
+            # Ocultar botón de cancelar
+            self.cancel_edit_button.pack_forget()
