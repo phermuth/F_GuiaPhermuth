@@ -5,7 +5,7 @@ class QuestHistory:
         """Inicializa un nuevo historial de misiones vacío."""
         self.quest_history = {}
     
-    def add_quest(self, quest_id, quest_name, action, coords_x=None, coords_y=None):
+    def add_quest(self, quest_id, quest_name, action, coords_x=None, coords_y=None, quest_class=None):
         """
         Agrega o actualiza una misión en el historial.
         
@@ -15,6 +15,7 @@ class QuestHistory:
             action (str): Acción realizada (A, C, T, etc.)
             coords_x (str, optional): Coordenada X. Defaults to None.
             coords_y (str, optional): Coordenada Y. Defaults to None.
+            quest_class (str, optional): Clase asociada a la misión. Defaults to None.
         """
         if not quest_id:
             return
@@ -24,7 +25,8 @@ class QuestHistory:
             self.quest_history[quest_id] = {
                 'name': quest_name,
                 'actions_used': [action],
-                'coords': {}
+                'coords': {},
+                'class': quest_class
             }
         else:
             # Actualizar nombre de la misión
@@ -33,6 +35,10 @@ class QuestHistory:
             # Agregar acción si no está ya
             if action not in self.quest_history[quest_id]['actions_used']:
                 self.quest_history[quest_id]['actions_used'].append(action)
+            
+            # Actualizar clase si se proporciona y no existía antes
+            if quest_class and not self.quest_history[quest_id].get('class'):
+                self.quest_history[quest_id]['class'] = quest_class
         
         # Guardar coordenadas para esta acción si se proporcionan
         if coords_x and coords_y:
@@ -57,6 +63,20 @@ class QuestHistory:
         if quest_id in self.quest_history:
             return self.quest_history[quest_id]['name']
         return ""
+    
+    def get_quest_class(self, quest_id):
+        """
+        Obtiene la clase asociada a una misión del historial.
+        
+        Args:
+            quest_id (str): ID de la misión
+            
+        Returns:
+            str: Clase de la misión o None si no existe o no tiene clase asociada
+        """
+        if quest_id in self.quest_history and 'class' in self.quest_history[quest_id]:
+            return self.quest_history[quest_id]['class']
+        return None
     
     def get_quest_coords(self, quest_id, action=None):
         """

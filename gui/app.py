@@ -132,70 +132,71 @@ class GuiaPhermuthCreator:
         self.form_frame.set_race_list(DataLoader.load_race_list())
     
     def add_step(self, step_data):
-        """
-        Añade o actualiza un paso en la guía.
-        
-        Args:
-            step_data (dict): Datos del paso a añadir o actualizar
-        """
-        # Validar campos requeridos
-        if not step_data['action'] or not step_data['quest_name']:
-            messagebox.showerror("Error", "Action and Quest Name are required fields")
-            return
-        
-        index_to_select = None
-        
-        if self.editing_step_index is not None:
-            # Estamos editando un paso existente
-            # Actualizar en el modelo Guide
-            self.guide.update_step(self.editing_step_index, step_data)
+            """
+            Añade o actualiza un paso en la guía.
             
-            # Guardamos el índice para seleccionarlo después
-            index_to_select = self.editing_step_index
+            Args:
+                step_data (dict): Datos del paso a añadir o actualizar
+            """
+            # Validar campos requeridos
+            if not step_data['action'] or not step_data['quest_name']:
+                messagebox.showerror("Error", "Action and Quest Name are required fields")
+                return
             
-            # Restablecer el índice de edición
-            self.editing_step_index = None
+            index_to_select = None
             
-            # Cambiar la UI al modo de adición
-            self.form_frame.set_edit_mode(False)
-        else:
-            # Añadir nuevo paso al modelo Guide
-            self.guide.add_step(step_data)
-            # Seleccionaremos el último paso
-            index_to_select = len(self.guide.get_all_steps()) - 1
-        
-        # Actualizar historial de misiones (en ambos casos)
-        quest_id = step_data['quest_id']
-        if quest_id:
-            self.quest_history.add_quest(
-                quest_id, 
-                step_data['quest_name'],
-                step_data['action'],
-                step_data.get('coord_x'),
-                step_data.get('coord_y')
-            )
-        
-        # Actualizar vista
-        self.quest_list_frame.refresh(self.guide.get_all_steps())
+            if self.editing_step_index is not None:
+                # Estamos editando un paso existente
+                # Actualizar en el modelo Guide
+                self.guide.update_step(self.editing_step_index, step_data)
+                
+                # Guardamos el índice para seleccionarlo después
+                index_to_select = self.editing_step_index
+                
+                # Restablecer el índice de edición
+                self.editing_step_index = None
+                
+                # Cambiar la UI al modo de adición
+                self.form_frame.set_edit_mode(False)
+            else:
+                # Añadir nuevo paso al modelo Guide
+                self.guide.add_step(step_data)
+                # Seleccionaremos el último paso
+                index_to_select = len(self.guide.get_all_steps()) - 1
+            
+            # Actualizar historial de misiones (en ambos casos)
+            quest_id = step_data['quest_id']
+            if quest_id:
+                self.quest_history.add_quest(
+                    quest_id, 
+                    step_data['quest_name'],
+                    step_data['action'],
+                    step_data.get('coord_x'),
+                    step_data.get('coord_y'),
+                    step_data.get('class')
+                )
+            
+            # Actualizar vista
+            self.quest_list_frame.refresh(self.guide.get_all_steps())
 
-        # Después de refrescar la lista, quitar el destacado de edición
-        self.quest_list_frame.highlight_editing_row(None)
-        
-        # Seleccionar el paso que acabamos de añadir/actualizar
-        if index_to_select is not None:
-            self.quest_list_frame.select_by_index(index_to_select)
-        
-        # Limpiar formulario
-        self.clear_form()
-        
-        # Sugerir siguiente acción si aplica
-        if quest_id:
-            next_action = self.quest_history.suggest_next_action(quest_id)
-            if next_action:
-                self.form_frame.set_next_action(next_action)
-        
-        # Autoguardar
-        self.autosave()
+            # Después de refrescar la lista, quitar el destacado de edición
+            self.quest_list_frame.highlight_editing_row(None)
+            
+            # Seleccionar el paso que acabamos de añadir/actualizar
+            if index_to_select is not None:
+                self.quest_list_frame.select_by_index(index_to_select)
+            
+            # Limpiar formulario
+            self.clear_form()
+            
+            # Sugerir siguiente acción si aplica
+            if quest_id:
+                next_action = self.quest_history.suggest_next_action(quest_id)
+                if next_action:
+                    self.form_frame.set_next_action(next_action)
+            
+            # Autoguardar
+            self.autosave()
     
     def get_quest_coords(self, quest_id, action):
         """
@@ -537,7 +538,7 @@ class GuiaPhermuthCreator:
     def use_selected_quest(self, quest_id, quest_name):
         """
         Utiliza la misión seleccionada del historial.
-        
+            
         Args:
             quest_id (str): ID de la misión
             quest_name (str): Nombre de la misión
@@ -545,7 +546,12 @@ class GuiaPhermuthCreator:
         # Establecer ID y nombre en el formulario
         self.form_frame.quest_id_var.set(quest_id)
         self.form_frame.quest_name_var.set(quest_name)
-        
+            
+        # Establecer clase si está disponible
+        quest_class = self.quest_history.get_quest_class(quest_id)
+        if quest_class:
+            self.form_frame.set_quest_class(quest_class)
+            
         # Sugerir siguiente acción
         next_action = self.quest_history.suggest_next_action(quest_id)
         if next_action:

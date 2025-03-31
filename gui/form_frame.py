@@ -228,21 +228,39 @@ class FormFrame:
         if action == 'T' and quest_id:
             self.try_load_quest_coords(quest_id, action)
     
-    def quest_id_changed(self, event=None):
+    def quest_id_changed(self, quest_id):
         """
         Maneja el evento de cambio en el ID de misión.
+            
+        Args:
+            quest_id (str): ID de la misión cambiada
+        """
+        # Verificar si está en el historial
+        if quest_id and self.quest_history.has_quest(quest_id):
+            # Auto-completar nombre de la misión
+            quest_name = self.quest_history.get_quest_name(quest_id)
+            if quest_name:
+                self.form_frame.quest_name_var.set(quest_name)
+                
+            # Auto-completar clase si está disponible
+            quest_class = self.quest_history.get_quest_class(quest_id)
+            if quest_class:
+                self.form_frame.set_quest_class(quest_class)
+                
+            # Sugerir siguiente acción
+            next_action = self.quest_history.suggest_next_action(quest_id)
+            if next_action:
+                self.form_frame.set_next_action(next_action)
+
+    def set_quest_class(self, quest_class):
+        """
+        Establece la clase de la misión en el campo correspondiente.
         
         Args:
-            event: Evento que desencadenó el cambio (opcional)
+            quest_class (str): Clase a establecer
         """
-        if hasattr(self, 'quest_changed_callback'):
-            quest_id = self.quest_id_var.get().strip()
-            self.quest_changed_callback(quest_id)
-            
-            # Intentar cargar coordenadas si la acción actual es 'T'
-            action = self.action_var.get()
-            if action == 'T' and quest_id:
-                self.try_load_quest_coords(quest_id, action)
+        if quest_class:
+            self.class_var.set(quest_class)
     
     def try_load_quest_coords(self, quest_id, action):
         """

@@ -71,21 +71,23 @@ class QuestHistoryDialog:
         # Crear ventana
         self.window = tk.Toplevel(parent)
         self.window.title("Quest History")
-        self.window.geometry("700x500")
+        self.window.geometry("800x500")
         
         # Crear treeview para el historial de misiones
-        columns = ("id", "name", "actions")
+        columns = ("id", "name", "actions", "class")
         self.tree = ttk.Treeview(self.window, columns=columns, show="headings")
         
         # Definir cabeceras de columnas
         self.tree.heading("id", text="Quest ID")
         self.tree.heading("name", text="Quest Name")
         self.tree.heading("actions", text="Actions Used")
+        self.tree.heading("class", text="Class")
         
         # Establecer anchos de columnas
         self.tree.column("id", width=80, anchor="center")
         self.tree.column("name", width=400)
         self.tree.column("actions", width=150, anchor="center")
+        self.tree.column("class", width=100, anchor="center")
         
         # Añadir barra de desplazamiento
         scrollbar = ttk.Scrollbar(self.window, orient="vertical", command=self.tree.yview)
@@ -98,7 +100,8 @@ class QuestHistoryDialog:
         # Poblar con datos
         for quest_id, data in self.quest_history.items():
             actions_str = ", ".join(data['actions_used'])
-            self.tree.insert("", "end", values=(quest_id, data['name'], actions_str))
+            class_str = data.get('class', "")
+            self.tree.insert("", "end", values=(quest_id, data['name'], actions_str, class_str))
             
         # Añadir botones
         button_frame = ttk.Frame(self.window)
@@ -121,33 +124,37 @@ class QuestHistoryDialog:
         values = self.tree.item(item, "values")
         
         # Llamar al callback con el ID y nombre de la misión
-        self.on_use_selected(values[0], values[1])
+        quest_id = values[0]
+        quest_name = values[1]
+        
+        # Llamar al callback con el ID y nombre de la misión
+        self.on_use_selected(quest_id, quest_name)
         
         # Cerrar la ventana
         self.window.destroy()
 
-def show_action_types_dialog(parent, action_types):
-    """
-    Muestra un diálogo con información sobre los tipos de acciones.
-    
-    Args:
-        parent: Widget padre
-        action_types (dict): Diccionario de tipos de acciones
-    """
-    action_info = "Action Types:\n\n"
-    for code, desc in action_types.items():
-        action_info += f"{code} - {desc}\n"
-    
-    messagebox.showinfo("Action Types", action_info, parent=parent)
-
-def confirm_new_guide(parent):
-    """
-    Solicita confirmación para crear una nueva guía.
-    
-    Args:
-        parent: Widget padre
+    def show_action_types_dialog(parent, action_types):
+        """
+        Muestra un diálogo con información sobre los tipos de acciones.
         
-    Returns:
-        bool: True si el usuario confirmó, False en caso contrario
-    """
-    return messagebox.askyesno("New Guide", "This will clear all current quest steps. Continue?", parent=parent)
+        Args:
+            parent: Widget padre
+            action_types (dict): Diccionario de tipos de acciones
+        """
+        action_info = "Action Types:\n\n"
+        for code, desc in action_types.items():
+            action_info += f"{code} - {desc}\n"
+        
+        messagebox.showinfo("Action Types", action_info, parent=parent)
+
+    def confirm_new_guide(parent):
+        """
+        Solicita confirmación para crear una nueva guía.
+        
+        Args:
+            parent: Widget padre
+            
+        Returns:
+            bool: True si el usuario confirmó, False en caso contrario
+        """
+        return messagebox.askyesno("New Guide", "This will clear all current quest steps. Continue?", parent=parent)
